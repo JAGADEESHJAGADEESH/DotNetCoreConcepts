@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+﻿using Ecommerce.Application.Services.TokenService;
+using Ecommerce.Core.Models;
+using ECommerce.Infrastructure.UserRepository;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ECommerceWebAPI.Controllers
 {
@@ -8,36 +10,133 @@ namespace ECommerceWebAPI.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        // GET: api/<UserController>
-        [HttpGet]
-        public IEnumerable<string> Get()
+        private readonly IConfiguration _configuration;
+        private readonly ITokenService _tokenService;
+        private readonly IUserRepository _userRepository;
+        private readonly ILogger<UserController> _logger;
+
+        public UserController(IConfiguration configuration, ITokenService tokenService, IUserRepository userRepository, ILogger<UserController> logger)
         {
-            return new string[] { "value1", "value2" };
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        // GET api/<UserController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        public record PublicUser(int Id, string Username);
+
+        // GET api/user/{id}
+        [HttpGet("{id:int}")]
+        [Authorize]
+        public async Task<IActionResult> GetById(int id)
         {
-            return "value";
+            try
+            {
+                var user = await _userRepository.GetUserByIdAsync(id);
+                if (user is null)
+                {
+                    return NotFound(new { message = "User not found." });
+                }
+
+                var result = new PublicUser(user.UserId, user.UserName);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in GetById.");
+                return StatusCode(500, new { message = "Internal server error." });
+            }
         }
 
-        // POST api/<UserController>
-        [HttpPost]
-        public void Post([FromBody] string value)
+        [HttpPost("SignUp")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Register([FromBody] UserCredentials credentials)
         {
+            if (credentials is null || string.IsNullOrWhiteSpace(credentials.Username) || string.IsNullOrWhiteSpace(credentials.Password))
+            {
+                return BadRequest(new { message = "Username and password are required." });
+            }
+
+            var userName = credentials.Username.Trim().ToLowerInvariant();
+
+            try
+            {
+                // Check existing user (repository implementation decides matching logic)
+                var existingUser = await _userRepository.GetUserByUserCredentialsAsync(new UserCredentials { Username = userName, Password = credentials.Password });
+                if (existingUser is not null)
+                {
+                    return Conflict(new { message = "Username already exists." });
+                }
+
+                var user = new Users
+                {
+                    UserName = userName,
+                    // NOTE: Store hashed passwords in production. This example stores plain text for brevity.
+                    Password = credentials.Password
+                };
+
+                await _userRepository.AddUserAsync(user);
+
+                // After AddUserAsync the repository should set the UserId for the created entity.
+                var result = new PublicUser(user.UserId, user.UserName);
+
+                // Return CreatedAtAction pointing to the real GET action and supply route values
+                return CreatedAtAction(nameof(GetById), new { id = user.UserId }, result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error registering user.");
+                return StatusCode(500, new { message = "Internal server error." });
+            }
         }
 
-        // PUT api/<UserController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [HttpPost("SignIn")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Login([FromBody] UserCredentials credentials)
         {
+            if (credentials is null || string.IsNullOrWhiteSpace(credentials.Username) || string.IsNullOrWhiteSpace(credentials.Password))
+            {
+                return BadRequest(new { message = "Username and password are required." });
+            }
+
+            var user = await GetUser(credentials);
+            if (user is null)
+            {
+                return Unauthorized(new { message = "Invalid username or password." });
+            }
+
+            try
+            {
+                var tokenDetails = await _tokenService.GenerateTokenAsync(user);
+                if (tokenDetails is not null)
+                {
+                    var accessToken = tokenDetails.AccessToken;
+                    var refreshToken = tokenDetails.RefreshToken;
+                    return Ok(new { accessToken, refreshToken });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during token generation.");
+                return StatusCode(500, new { message = "Internal server error." });
+            }
+
+            return BadRequest();
         }
 
-        // DELETE api/<UserController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
+        // Helper - not an API action
+        [NonAction]
+        public async Task<Users?> GetUser(UserCredentials credentials)
         {
+            try
+            {
+                return await _userRepository.GetUserByUserCredentialsAsync(credentials);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving user.");
+                return null;
+            }
         }
     }
 }

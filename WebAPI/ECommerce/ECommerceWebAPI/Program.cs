@@ -1,5 +1,7 @@
 using System.Text;
-using ECommerceWebAPI.Services.Token;
+using ECommerce.Infrastructure.TokenRepository;
+using Ecommerce.Application.Services.TokenService;
+using ECommerce.Infrastructure.UserRepository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -7,21 +9,21 @@ using Microsoft.OpenApi;
 var builder = WebApplication.CreateBuilder(args);
 
 // JWT signing key (replace with secure key in configuration for production)
-var jwtSigningKey = "ReplaceWithAStrongRandomKey!ChangeMe";
+var jwtSigningKey = builder.Configuration["Jwt:Key"] ?? "ReplaceWithAStrongRandomKey!ChangeMe";
+var keyBytes = Encoding.UTF8.GetBytes(jwtSigningKey);
 
 // Add services to the container.
 builder.Services.AddControllers();
 
+// repositories
+builder.Services.AddSingleton<ITokenRepository, TokenRepository>();
+builder.Services.AddSingleton<IUserRepository, UserRepository>();
 
-// Register token service with the signing key
-builder.Services.AddSingleton<ITokenService, TokenService>(provider =>
-{
-    var logger = provider.GetRequiredService<ILogger<TokenService>>();
-    return new TokenService(logger);
-});
+//services
+builder.Services.AddSingleton<ITokenService, TokenService>();
+
 
 // Configure authentication with JWT Bearer
-var keyBytes = Encoding.UTF8.GetBytes(jwtSigningKey);
 builder.Services
     .AddAuthentication(options =>
     {

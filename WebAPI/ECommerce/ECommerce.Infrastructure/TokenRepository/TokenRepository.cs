@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Ecommerce.Core.Models;
+using Microsoft.Extensions.Logging;
 
 namespace ECommerce.Infrastructure.TokenRepository
 {
@@ -9,22 +10,12 @@ namespace ECommerce.Infrastructure.TokenRepository
         {
             _logger = logger;
         }
-        public Task SaveTokenAsync(string token, int userId)
-        {
-            _logger.LogInformation($"Saving token for user {userId}");
-            throw new NotImplementedException();
-        }
 
-        public Task<bool> IsTokenValidAsync(string token, int userId)
+        public async Task<bool> SaveTokenAsync(Token record, CancellationToken cancellationToken)
         {
-            _logger.LogInformation($"Checking if token is valid for user {userId}");
-            throw new NotImplementedException();
-        }
-
-        public Task InvalidateTokenAsync(string token, int userId)
-        {
-            _logger.LogInformation($"Invalidating token for user {userId}");
-            throw new NotImplementedException();
+            _logger.LogInformation($"Saving token for user {record.UserId}");
+            // Simulate saving the token
+            return false;
         }
     }
 }
