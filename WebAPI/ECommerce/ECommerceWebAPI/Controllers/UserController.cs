@@ -3,6 +3,8 @@ using Ecommerce.Core.Models;
 using ECommerce.Infrastructure.UserRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace ECommerceWebAPI.Controllers
 {
@@ -50,38 +52,31 @@ namespace ECommerceWebAPI.Controllers
 
         [HttpPost("SignUp")]
         [AllowAnonymous]
-        public async Task<IActionResult> Register([FromBody] UserCredentials credentials)
+        public async Task<IActionResult> Register([FromBody] Users credentials)
         {
-            if (credentials is null || string.IsNullOrWhiteSpace(credentials.Username) || string.IsNullOrWhiteSpace(credentials.Password))
+            if (credentials is null || string.IsNullOrWhiteSpace(credentials.UserName) || string.IsNullOrWhiteSpace(credentials.Password))
             {
                 return BadRequest(new { message = "Username and password are required." });
             }
 
-            var userName = credentials.Username.Trim().ToLowerInvariant();
+            var userName = credentials.UserName.Trim().ToLowerInvariant();
 
             try
             {
                 // Check existing user (repository implementation decides matching logic)
-                var existingUser = await _userRepository.GetUserByUserCredentialsAsync(new UserCredentials { Username = userName, Password = credentials.Password });
+                var existingUser = await _userRepository.GetUserByUserCredentialsAsync(credentials.UserName, credentials.Password );
                 if (existingUser is not null)
                 {
                     return Conflict(new { message = "Username already exists." });
                 }
 
-                var user = new Users
-                {
-                    UserName = userName,
-                    // NOTE: Store hashed passwords in production. This example stores plain text for brevity.
-                    Password = credentials.Password
-                };
+                credentials.PasswordSalt = ComputeSha256Hash(credentials.Password);
 
-                await _userRepository.AddUserAsync(user);
+                await _userRepository.AddUserAsync(credentials);
 
-                // After AddUserAsync the repository should set the UserId for the created entity.
-                var result = new PublicUser(user.UserId, user.UserName);
 
                 // Return CreatedAtAction pointing to the real GET action and supply route values
-                return CreatedAtAction(nameof(GetById), new { id = user.UserId }, result);
+                return CreatedAtAction(nameof(GetById), new { id = credentials.UserId }, credentials);
             }
             catch (Exception ex)
             {
@@ -92,9 +87,9 @@ namespace ECommerceWebAPI.Controllers
 
         [HttpPost("SignIn")]
         [AllowAnonymous]
-        public async Task<IActionResult> Login([FromBody] UserCredentials credentials)
+        public async Task<IActionResult> Login([FromBody] Users credentials)
         {
-            if (credentials is null || string.IsNullOrWhiteSpace(credentials.Username) || string.IsNullOrWhiteSpace(credentials.Password))
+            if (credentials is null || string.IsNullOrWhiteSpace(credentials.UserName) || string.IsNullOrWhiteSpace(credentials.Password))
             {
                 return BadRequest(new { message = "Username and password are required." });
             }
@@ -126,17 +121,25 @@ namespace ECommerceWebAPI.Controllers
 
         // Helper - not an API action
         [NonAction]
-        public async Task<Users?> GetUser(UserCredentials credentials)
+        public async Task<Users?> GetUser(Users credentials)
         {
             try
             {
-                return await _userRepository.GetUserByUserCredentialsAsync(credentials);
+                return await _userRepository.GetUserByUserCredentialsAsync(credentials.UserName, credentials.Password);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving user.");
                 return null;
             }
+        }
+
+        private static string ComputeSha256Hash(string input)
+        {
+            using var sha = SHA256.Create();
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var hash = sha.ComputeHash(bytes);
+            return Convert.ToBase64String(hash);
         }
     }
 }

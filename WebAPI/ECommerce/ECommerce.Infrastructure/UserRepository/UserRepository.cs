@@ -3,6 +3,7 @@ using Ecommerce.Core.Models;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.Data;
 
 namespace ECommerce.Infrastructure.UserRepository
 {
@@ -30,21 +31,23 @@ namespace ECommerce.Infrastructure.UserRepository
             if (user == null) throw new ArgumentNullException(nameof(user));
 
             const string sql = @"
-INSERT INTO Users (
-    Username,
-    Email,
-    PasswordHash,
-    FirstName,
-    LastName
-) VALUES (
-    @Username,
-    @Email,
-    @PasswordHash,
-    @FirstName,
-    @LastName
-);
-SELECT CAST(SCOPE_IDENTITY() AS int);
-";
+                INSERT INTO Users (
+                    UserName,
+                    Email,
+                    Password,
+                    PasswordSalt,
+                    FirstName,
+                    LastName
+                ) VALUES (
+                    @Username,
+                    @Email,
+                    @Password,
+                    @PasswordSalt,
+                    @FirstName,
+                    @LastName
+                );
+                SELECT CAST(SCOPE_IDENTITY() AS int);
+                ";
 
             try
             {
@@ -52,7 +55,7 @@ SELECT CAST(SCOPE_IDENTITY() AS int);
                 await connection.OpenAsync();
 
                 var newId = await connection.QuerySingleAsync<int>(sql, user);
-                var idProp = user.GetType().GetProperty("Id");
+                var idProp = user.GetType().GetProperty("UserId");
                 if (idProp != null && idProp.CanWrite)
                 {
                     idProp.SetValue(user, Convert.ChangeType(newId, idProp.PropertyType));
@@ -105,16 +108,12 @@ SELECT CAST(SCOPE_IDENTITY() AS int);
             }
         }
 
-        public async Task<Users> GetUserByUserCredentialsAsync(UserCredentials credentials)
+        public async Task<Users> GetUserByUserCredentialsAsync(string userName, string password)
         {
-            if (credentials == null) throw new ArgumentNullException(nameof(credentials));
+            if (string.IsNullOrWhiteSpace(userName)) throw new ArgumentNullException(nameof(userName));
+            if (string.IsNullOrWhiteSpace(password)) throw new ArgumentNullException(nameof(password));
 
-            const string sql = @"
-SELECT TOP 1 *
-FROM Users
-WHERE Username = @Username
-  AND PasswordHash = @PasswordHash;
-";
+            const string sql = "USP_GetUserByUserCredentials";
 
             try
             {
@@ -122,12 +121,12 @@ WHERE Username = @Username
                 await connection.OpenAsync();
 
                 // Assumes UserCredentials has Username and PasswordHash properties. Adjust if different.
-                var user = await connection.QueryFirstOrDefaultAsync<Users>(sql, credentials);
+                var user = await connection.QueryFirstOrDefaultAsync<Users>(sql, new { userName, password }, commandType: CommandType.StoredProcedure);
                 return user;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while fetching user by credentials for username {Username}", credentials?.Username);
+                _logger.LogError(ex, "Error while fetching user by credentials for username {Username}", userName);
                 throw;
             }
         }
@@ -137,15 +136,16 @@ WHERE Username = @Username
             if (user == null) throw new ArgumentNullException(nameof(user));
 
             const string sql = @"
-UPDATE Users
-SET
-    Username = @Username,
-    Email = @Email,
-    PasswordHash = @PasswordHash,
-    FirstName = @FirstName,
-    LastName = @LastName
-WHERE Id = @Id;
-";
+                        UPDATE Users
+                        SET
+                            UserName = @UserName,
+                            Email = @Email,
+                            Password = @Password,
+                            PasswordSalt = @PasswordSalt,
+                            FirstName = @FirstName,
+                            LastName = @LastName
+                        WHERE UserId = @UserId;
+                        ";
 
             try
             {
