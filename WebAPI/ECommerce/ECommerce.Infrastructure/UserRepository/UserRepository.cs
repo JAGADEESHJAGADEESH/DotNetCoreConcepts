@@ -16,9 +16,16 @@ namespace ECommerce.Infrastructure.UserRepository
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
-
-            _connectionString = configuration.GetConnectionString("DefaultConnection")
-                ?? configuration["ConnectionStrings:DefaultConnection"];
+            if (configuration is not null)
+            {
+                var configSection = configuration.GetSection("ConnectionStrings");
+                if (configSection is not null)
+                {
+                    var connectionString = configSection.GetConnectionString("DefaultConnection");
+                    if (!string.IsNullOrWhiteSpace(connectionString))
+                        _connectionString = connectionString;
+                }
+            }
 
             if (string.IsNullOrWhiteSpace(_connectionString))
             {
@@ -26,40 +33,18 @@ namespace ECommerce.Infrastructure.UserRepository
             }
         }
 
-        public async Task AddUserAsync(Users user)
+        public async Task SaveUserAsync(Users user)
         {
             if (user == null) throw new ArgumentNullException(nameof(user));
 
-            const string sql = @"
-                INSERT INTO Users (
-                    UserName,
-                    Email,
-                    Password,
-                    PasswordSalt,
-                    FirstName,
-                    LastName
-                ) VALUES (
-                    @Username,
-                    @Email,
-                    @Password,
-                    @PasswordSalt,
-                    @FirstName,
-                    @LastName
-                );
-                SELECT CAST(SCOPE_IDENTITY() AS int);
-                ";
+            const string sql = @"[dbo].[USP_SaveUser]";
 
             try
             {
                 await using var connection = new SqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var newId = await connection.QuerySingleAsync<int>(sql, user);
-                var idProp = user.GetType().GetProperty("UserId");
-                if (idProp != null && idProp.CanWrite)
-                {
-                    idProp.SetValue(user, Convert.ChangeType(newId, idProp.PropertyType));
-                }
+                var newId = await connection.ExecuteAsync(sql, user);
 
                 _logger.LogDebug("Inserted user with id {UserId}", newId);
             }
@@ -70,48 +55,11 @@ namespace ECommerce.Infrastructure.UserRepository
             }
         }
 
-        public async Task DeleteUserAsync(int userId)
-        {
-            const string sql = "DELETE FROM Users WHERE Id = @UserId;";
-
-            try
-            {
-                await using var connection = new SqlConnection(_connectionString);
-                await connection.OpenAsync();
-
-                var affected = await connection.ExecuteAsync(sql, new { UserId = userId });
-                _logger.LogDebug("Deleted user {UserId}. Rows affected: {Rows}", userId, affected);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while deleting user {UserId}", userId);
-                throw;
-            }
-        }
-
-        public async Task<Users> GetUserByIdAsync(int userId)
-        {
-            const string sql = "SELECT * FROM Users WHERE Id = @UserId;";
-
-            try
-            {
-                await using var connection = new SqlConnection(_connectionString);
-                await connection.OpenAsync();
-
-                var user = await connection.QueryFirstOrDefaultAsync<Users>(sql, new { UserId = userId });
-                return user;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while fetching user by id {UserId}", userId);
-                throw;
-            }
-        }
-
-        public async Task<Users> GetUserByUserCredentialsAsync(string userName, string password)
+      
+        public async Task<Users> GetUserByUserCredentialsAsync(string userName, string passwordSalt)
         {
             if (string.IsNullOrWhiteSpace(userName)) throw new ArgumentNullException(nameof(userName));
-            if (string.IsNullOrWhiteSpace(password)) throw new ArgumentNullException(nameof(password));
+            if (string.IsNullOrWhiteSpace(passwordSalt)) throw new ArgumentNullException(nameof(passwordSalt));
 
             const string sql = "USP_GetUserByUserCredentials";
 
@@ -121,43 +69,12 @@ namespace ECommerce.Infrastructure.UserRepository
                 await connection.OpenAsync();
 
                 // Assumes UserCredentials has Username and PasswordHash properties. Adjust if different.
-                var user = await connection.QueryFirstOrDefaultAsync<Users>(sql, new { userName, password }, commandType: CommandType.StoredProcedure);
-                return user;
+                var user = await connection.QueryFirstOrDefaultAsync<Users>(sql, new { userName, passwordSalt }, commandType: CommandType.StoredProcedure);
+                return user ?? new Users();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error while fetching user by credentials for username {Username}", userName);
-                throw;
-            }
-        }
-
-        public async Task UpdateUserAsync(Users user)
-        {
-            if (user == null) throw new ArgumentNullException(nameof(user));
-
-            const string sql = @"
-                        UPDATE Users
-                        SET
-                            UserName = @UserName,
-                            Email = @Email,
-                            Password = @Password,
-                            PasswordSalt = @PasswordSalt,
-                            FirstName = @FirstName,
-                            LastName = @LastName
-                        WHERE UserId = @UserId;
-                        ";
-
-            try
-            {
-                await using var connection = new SqlConnection(_connectionString);
-                await connection.OpenAsync();
-
-                var affected = await connection.ExecuteAsync(sql, user);
-                _logger.LogDebug("Updated user {UserId}. Rows affected: {Rows}", user.GetType().GetProperty("Id")?.GetValue(user), affected);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while updating user");
                 throw;
             }
         }
