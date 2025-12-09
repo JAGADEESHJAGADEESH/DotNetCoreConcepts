@@ -2,7 +2,6 @@ CREATE TABLE [dbo].[Users](
 	[UserId] [bigint] IDENTITY(1,1) NOT NULL,
 	[UserName] [nvarchar](100) NOT NULL,
 	[Email] [nvarchar](256) NOT NULL,
-	[Password] [nvarchar](256) NOT NULL,
 	[PasswordSalt] [nvarchar](256) NOT NULL,
 	[FirstName] [nvarchar](100) NULL,
 	[LastName] [nvarchar](100) NULL,

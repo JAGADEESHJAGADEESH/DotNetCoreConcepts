@@ -4,7 +4,9 @@ using Ecommerce.Application.Services.TokenService;
 using ECommerce.Infrastructure.UserRepository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Ecommerce.Application.Services.UserService;
 using Microsoft.OpenApi;
+using Ecommerce.Application.Services.PasswordService;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -21,7 +23,8 @@ builder.Services.AddSingleton<IUserRepository, UserRepository>();
 
 //services
 builder.Services.AddSingleton<ITokenService, TokenService>();
-
+builder.Services.AddSingleton<IUserService, UserService>();
+builder.Services.AddSingleton<IPasswordService, PasswordService>();
 
 // Configure authentication with JWT Bearer
 builder.Services

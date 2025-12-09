@@ -2,7 +2,6 @@
 using Ecommerce.Application.Services.TokenService;
 using Ecommerce.Application.Services.UserService;
 using Ecommerce.Core.Models;
-using ECommerce.Infrastructure.UserRepository;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,24 +11,17 @@ namespace ECommerceWebAPI.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly IConfiguration _configuration;
         private readonly ITokenService _tokenService;
         private readonly IUserService _userService;
         private readonly IPasswordService _passwordService;
         private readonly ILogger<UserController> _logger;
 
-        public UserController(
-            IConfiguration configuration,
-            ITokenService tokenService,
-            IUserService userService,
-            IPasswordService passwordService,
-            ILogger<UserController> logger)
+        public UserController(ITokenService tokenService, IUserService userService, IPasswordService passwordService, ILogger<UserController> logger)
         {
-            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
-            _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
-            _userService = userService ?? throw new ArgumentNullException(nameof(userService));
-            _passwordService = passwordService ?? throw new ArgumentNullException(nameof(passwordService));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _tokenService = tokenService;
+            _userService = userService;
+            _passwordService = passwordService;
+            _logger = logger;
         }
 
         [HttpPost("Register")]
@@ -41,20 +33,18 @@ namespace ECommerceWebAPI.Controllers
                 return BadRequest(new { message = "Username and password are required." });
             }
 
-            var userName = user.UserName.Trim().ToLowerInvariant();
-
             try
             {
+                var email = user.Email.Trim();
+                // Hash password using injected password service and clear plaintext password before saving
+                user.PasswordSalt = _passwordService.HashPassword(user.Password.Trim());
+                user.Password = null!;
                 // Check existing user (repository implementation decides matching logic)
-                var existingUser = await _userService.GetUserByUserCredentialsAsync(userName, user.Password);
+                var existingUser = await _userService.GetUserByUserCredentialsAsync(email);
                 if (existingUser is not null)
                 {
-                    return Conflict(new { message = "Username already exists." });
+                    return Conflict(new { message = $"UserName: {existingUser.Email} already exists." });
                 }
-
-                // Hash password using injected password service and clear plaintext password before saving
-                user.PasswordSalt = _passwordService.HashPassword(user.Password);
-                user.Password = null!;
 
                 await _userService.SaveUserAsync(user);
 
@@ -79,7 +69,7 @@ namespace ECommerceWebAPI.Controllers
             var userName = credentials.UserName.Trim();
             var passwordSalt = _passwordService.HashPassword(credentials.Password.Trim());
 
-            var user = await GetUserByUserCredential(userName, passwordSalt);
+            var user = await _userService.GetUserByUserCredentialsAsync(userName);
             if (user is null)
             {
                 return Unauthorized(new { message = "Invalid username or password." });
@@ -111,17 +101,23 @@ namespace ECommerceWebAPI.Controllers
         }
 
         [HttpGet("GetUser")]
-        public async Task<Users?> GetUserByUserCredential(string userName, string passwordSalt)
+        public async Task<IActionResult> GetUserByUserCredential(string email)
         {
             try
             {
-                return await _userService.GetUserByUserCredentialsAsync(userName, passwordSalt);
+                var existingUser = await _userService.GetUserByUserCredentialsAsync(email);
+                if (existingUser is null)
+                {
+                    return Unauthorized(new { message = "Invalid username or password." });
+                }
+                return Ok(existingUser);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving user.");
-                return null;
+                return StatusCode(500, new { message = "Internal server error." });
             }
+
         }
     }
 }

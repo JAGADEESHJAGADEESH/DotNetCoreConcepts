@@ -14,11 +14,11 @@ namespace Ecommerce.Application.Services.UserService
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         }
-        public async Task<Users> GetUserByUserCredentialsAsync(string userName, string passwordSalt)
+        public async Task<Users> GetUserByUserCredentialsAsync(string email)
         {
             try
             {
-                return await _userRepository.GetUserByUserCredentialsAsync(userName, passwordSalt);
+                return await _userRepository.GetUserByUserCredentialsAsync(email);
             }
             catch (Exception ex)
             {

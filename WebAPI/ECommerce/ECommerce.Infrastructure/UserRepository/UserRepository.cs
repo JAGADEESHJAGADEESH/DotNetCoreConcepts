@@ -16,16 +16,9 @@ namespace ECommerce.Infrastructure.UserRepository
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
-            if (configuration is not null)
-            {
-                var configSection = configuration.GetSection("ConnectionStrings");
-                if (configSection is not null)
-                {
-                    var connectionString = configSection.GetConnectionString("DefaultConnection");
-                    if (!string.IsNullOrWhiteSpace(connectionString))
-                        _connectionString = connectionString;
-                }
-            }
+            var connectionString = configuration.GetSection("ConnectionStrings:DefaultConnection");
+            if (connectionString is not null && connectionString.Value is not null)
+                _connectionString = connectionString.Value;
 
             if (string.IsNullOrWhiteSpace(_connectionString))
             {
@@ -37,14 +30,24 @@ namespace ECommerce.Infrastructure.UserRepository
         {
             if (user == null) throw new ArgumentNullException(nameof(user));
 
-            const string sql = @"[dbo].[USP_SaveUser]";
+            const string sql = "USP_SaveUser";
 
             try
             {
                 await using var connection = new SqlConnection(_connectionString);
                 await connection.OpenAsync();
 
-                var newId = await connection.ExecuteAsync(sql, user);
+                var parameters = new
+                {
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    PasswordSalt = user.PasswordSalt,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName
+                };
+
+                // ExecuteScalarAsync<int> reads the scalar value returned by the stored procedure (NewUserId).
+                var newId = await connection.ExecuteScalarAsync<int>(sql, parameters, commandType: CommandType.StoredProcedure);
 
                 _logger.LogDebug("Inserted user with id {UserId}", newId);
             }
@@ -55,11 +58,10 @@ namespace ECommerce.Infrastructure.UserRepository
             }
         }
 
-      
-        public async Task<Users> GetUserByUserCredentialsAsync(string userName, string passwordSalt)
+
+        public async Task<Users> GetUserByUserCredentialsAsync(string email)
         {
-            if (string.IsNullOrWhiteSpace(userName)) throw new ArgumentNullException(nameof(userName));
-            if (string.IsNullOrWhiteSpace(passwordSalt)) throw new ArgumentNullException(nameof(passwordSalt));
+            if (string.IsNullOrWhiteSpace(email)) throw new ArgumentNullException(nameof(email));
 
             const string sql = "USP_GetUserByUserCredentials";
 
@@ -69,12 +71,12 @@ namespace ECommerce.Infrastructure.UserRepository
                 await connection.OpenAsync();
 
                 // Assumes UserCredentials has Username and PasswordHash properties. Adjust if different.
-                var user = await connection.QueryFirstOrDefaultAsync<Users>(sql, new { userName, passwordSalt }, commandType: CommandType.StoredProcedure);
-                return user ?? new Users();
+                var user = await connection.QueryFirstOrDefaultAsync<Users>(sql, new { email }, commandType: CommandType.StoredProcedure);
+                return user ?? null!;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error while fetching user by credentials for username {Username}", userName);
+                _logger.LogError(ex, "Error while fetching user by credentials for username {Username}", email);
                 throw;
             }
         }
