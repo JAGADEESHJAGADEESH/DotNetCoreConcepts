@@ -6,11 +6,11 @@ namespace ECommerceWebAPI.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UploadController : ControllerBase
+    public class ProductImageController : ControllerBase
     {
         private readonly FileStorageOptions _options;
 
-        public UploadController(IOptions<FileStorageOptions> options)
+        public ProductImageController(IOptions<FileStorageOptions> options)
         {
             _options = options.Value;
         }
