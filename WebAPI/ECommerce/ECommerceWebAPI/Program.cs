@@ -1,18 +1,22 @@
-using System.Text;
-using ECommerce.Infrastructure.TokenRepository;
+using Ecommerce.Application.Services.PasswordService;
 using Ecommerce.Application.Services.TokenService;
+using Ecommerce.Application.Services.UserService;
+using Ecommerce.Core.Models;
+using ECommerce.Infrastructure.TokenRepository;
 using ECommerce.Infrastructure.UserRepository;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
-using Ecommerce.Application.Services.UserService;
 using Microsoft.OpenApi;
-using Ecommerce.Application.Services.PasswordService;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // JWT signing key (replace with secure key in configuration for production)
 var jwtSigningKey = builder.Configuration["Jwt:Key"] ?? "ReplaceWithAStrongRandomKey!ChangeMe";
 var keyBytes = Encoding.UTF8.GetBytes(jwtSigningKey);
+builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -25,6 +29,10 @@ builder.Services.AddSingleton<IUserRepository, UserRepository>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
+
+builder.Services.Configure<FileStorageOptions>(
+    builder.Configuration.GetSection("FileStorage"));
+
 
 // Configure authentication with JWT Bearer
 builder.Services
@@ -62,6 +70,10 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+var fileOptions = builder.Configuration
+    .GetSection("FileStorage")
+    .Get<FileStorageOptions>();
+
 var app = builder.Build();
 
 
@@ -76,6 +88,14 @@ app.UseSwaggerUI(options =>
     // Optional: Set Swagger UI to the app's root URL (e.g., http://localhost:port/)
     // options.RoutePrefix = string.Empty;
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "Your API V1");
+});
+
+
+
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(fileOptions.ImagePath),
+    RequestPath = "/product-images"
 });
 
 app.UseHttpsRedirection();
