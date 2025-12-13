@@ -18,6 +18,7 @@ var keyBytes = Encoding.UTF8.GetBytes(jwtSigningKey);
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
 
+
 // Add services to the container.
 builder.Services.AddControllers();
 
@@ -74,6 +75,20 @@ var fileOptions = builder.Configuration
     .GetSection("FileStorage")
     .Get<FileStorageOptions>();
 
+// Add CORS service
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp",
+        policy =>
+        {
+            policy.WithOrigins("http://localhost:5173") // React dev server
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        });
+});
+
+
 var app = builder.Build();
 
 
@@ -99,6 +114,8 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowReactApp");
 
 // Add authentication BEFORE authorization
 app.UseAuthentication();

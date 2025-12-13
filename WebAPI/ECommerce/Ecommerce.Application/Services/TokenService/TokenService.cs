@@ -75,24 +75,12 @@ namespace Ecommerce.Application.Services.TokenService
                 Revoked = false
             };
 
-            try 
+            return new Token
             {
-                var isSuccess = await _tokenRepository.SaveTokenAsync(record, cancellationToken);
-                if (isSuccess)
-                {
-                    return new Token
-                    {
-                        AccessToken = accessToken,
-                        RefreshToken = refreshToken
-                    };
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error logging token storage for user {Username}", user.UserName);
-            }
+                AccessToken = accessToken,
+                RefreshToken = refreshToken
+            };
 
-            return null!;
         }
 
         private static string GenerateSecureRandomString(int sizeInBytes)

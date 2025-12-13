@@ -27,11 +27,12 @@ namespace Ecommerce.Application.Services.UserService
             }
         }
 
-        public async Task SaveUserAsync(Users user)
+        public async Task<int?> SaveUserAsync(Users user)
         {
             try
             {
-                await _userRepository.SaveUserAsync(user);
+                var userId = await _userRepository.SaveUserAsync(user);
+                return userId;
             }
             catch (Exception ex)
             {

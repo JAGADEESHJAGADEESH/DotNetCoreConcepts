@@ -26,7 +26,7 @@ namespace ECommerce.Infrastructure.UserRepository
             }
         }
 
-        public async Task SaveUserAsync(Users user)
+        public async Task<int?> SaveUserAsync(Users user)
         {
             if (user == null) throw new ArgumentNullException(nameof(user));
 
@@ -48,8 +48,14 @@ namespace ECommerce.Infrastructure.UserRepository
 
                 // ExecuteScalarAsync<int> reads the scalar value returned by the stored procedure (NewUserId).
                 var newId = await connection.ExecuteScalarAsync<int>(sql, parameters, commandType: CommandType.StoredProcedure);
+                if(newId <= 0)
+                {
+                    _logger.LogWarning("Failed to insert user, stored procedure returned invalid UserId: {UserId}", newId);
+                    throw new InvalidOperationException("Failed to insert user, invalid UserId returned.");
+                }
 
                 _logger.LogDebug("Inserted user with id {UserId}", newId);
+                return newId;
             }
             catch (Exception ex)
             {

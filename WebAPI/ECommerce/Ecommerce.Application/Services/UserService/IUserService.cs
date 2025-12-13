@@ -5,6 +5,6 @@ namespace Ecommerce.Application.Services.UserService
     public interface IUserService
     {
         Task<Users> GetUserByUserCredentialsAsync(string email);
-        Task SaveUserAsync(Users user);
+        Task<int?> SaveUserAsync(Users user);
     }
 }

@@ -68,6 +68,33 @@ namespace ECommerceWebAPI.Controllers
             return Ok(result);
         }
 
+        [HttpGet("ImageName")]
+        public IActionResult GetImageByName(string name)
+        {
+            string imageFolder = _options.ImagePath;  // From appsettings.json
+
+            if (!Directory.Exists(imageFolder))
+                return NotFound("Image directory not found.");
+
+            var files = Directory.GetFiles(imageFolder);
+
+            var result = files.Select(file =>
+            {
+                string fileName = Path.GetFileName(file);
+
+                // public URL for UI
+                string url = $"{Request.Scheme}://{Request.Host}/product-images/{fileName}";
+
+                return new
+                {
+                    FileName = fileName,
+                    Url = url
+                };
+            });
+
+            return Ok(result);
+        }
+
     }
 
 }

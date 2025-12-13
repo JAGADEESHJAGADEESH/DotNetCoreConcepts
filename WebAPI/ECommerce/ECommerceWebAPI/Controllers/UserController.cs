@@ -46,10 +46,21 @@ namespace ECommerceWebAPI.Controllers
                     return Conflict(new { message = $"UserName: {existingUser.Email} already exists." });
                 }
 
-                await _userService.SaveUserAsync(user);
+                var userId = await _userService.SaveUserAsync(user);
+                if (userId is null || userId <= 0)
+                {
+                    return StatusCode(500, new { message = "Failed to register user." });
+                }
+                var token = await _tokenService.GenerateTokenAsync(user);
+                var response = new RegisterResponse
+                {
+                    Success = true,
+                    User = user,
+                    Token = token,
+                    Message = "Registration successful"
+                };
 
-                // Return CreatedAtAction pointing to the real GET action and supply route values
-                return CreatedAtAction(nameof(SaveUser), new { id = user.UserId }, user);
+                return Ok(response);
             }
             catch (Exception ex)
             {
@@ -83,21 +94,21 @@ namespace ECommerceWebAPI.Controllers
                     return Unauthorized(new { message = "Invalid username or password." });
                 }
 
-                var tokenDetails = await _tokenService.GenerateTokenAsync(user);
-                if (tokenDetails is not null)
+                var token = await _tokenService.GenerateTokenAsync(user);
+                var response = new RegisterResponse
                 {
-                    var accessToken = tokenDetails.AccessToken;
-                    var refreshToken = tokenDetails.RefreshToken;
-                    return Ok(new { accessToken, refreshToken });
-                }
+                    Success = true,
+                    User = user,
+                    Token = token,
+                    Message = "Login successful"
+                };
+                return Ok(response);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during token generation or password verification.");
                 return StatusCode(500, new { message = "Internal server error." });
             }
-
-            return BadRequest();
         }
 
         [HttpGet("GetUser")]
