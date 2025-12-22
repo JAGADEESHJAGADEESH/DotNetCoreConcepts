@@ -1,0 +1,8 @@
+-- Category Table
+IF NOT EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'Category')
+BEGIN
+    CREATE TABLE Category (
+        Id INT PRIMARY KEY IDENTITY(1,1),
+        CategoryName NVARCHAR(255) NOT NULL
+    );
+END;

@@ -1,0 +1,9 @@
+CREATE OR ALTER PROCEDURE USP_GetAllCategories
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT Id, CategoryName
+    FROM Category WITH(NOLOCK)
+    ORDER BY Id;
+END

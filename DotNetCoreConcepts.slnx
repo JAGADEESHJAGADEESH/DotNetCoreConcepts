@@ -1,0 +1,25 @@
+<Solution>
+  <Folder Name="/DSA/">
+    <Project Path="DSA/DSA/DSA.csproj" />
+  </Folder>
+  <Folder Name="/Microservices/" />
+  <Folder Name="/Microservices/BuildingBlocks/">
+    <Project Path="Microservices/BuildingBlocks/BuildingBlocks/BuildingBlocks.csproj" />
+  </Folder>
+  <Folder Name="/Microservices/ECommerce/" />
+  <Folder Name="/Microservices/ECommerce/AuthService/">
+    <Project Path="Microservices/ECommerce/AuthService/AuthService.API/AuthService.API.csproj" />
+    <Project Path="Microservices/ECommerce/AuthService/AuthService.Application/AuthService.Application.csproj" Id="419a1913-1d17-4a97-8185-2822f8b388c4" />
+    <Project Path="Microservices/ECommerce/AuthService/AuthService.Core/AuthService.Core.csproj" Id="4cf5d8c9-a500-4f38-bd8c-170232a31cd9" />
+    <Project Path="Microservices/ECommerce/AuthService/AuthService.Infrastructure/AuthService.Infrastructure.csproj" Id="ce16a800-bb34-4a3f-8c50-cb5228a8eb42" />
+  </Folder>
+  <Folder Name="/Microservices/ECommerce/ProductService/">
+    <Project Path="Microservices/ECommerce/ProductService/ProductService.API/ProductService.API.csproj" Id="fa61480c-3411-4fbc-bb5f-9226d80594b2" />
+    <Project Path="Microservices/ECommerce/ProductService/ProductService.Application/ProductService.Application.csproj" Id="8757e79f-b0b6-44fd-9e47-2e71b4a8de17" />
+    <Project Path="Microservices/ECommerce/ProductService/ProductService.Core/ProductService.Core.csproj" Id="f8feb643-17c0-48ba-be89-db044d470a1b" />
+    <Project Path="Microservices/ECommerce/ProductService/ProductService.Infrastructure/ProductService.Infrastructure.csproj" Id="39dca2b8-052c-4e4d-a271-0f2c88341781" />
+  </Folder>
+  <Folder Name="/NugetPackages/">
+    <Project Path="NugetPackages/DatabaseAccess/DatabaseAccess.csproj" />
+  </Folder>
+</Solution>
