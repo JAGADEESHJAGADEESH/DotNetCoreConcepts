@@ -1,0 +1,9 @@
+CREATE OR ALTER PROCEDURE USP_DeleteExpiredRefreshTokens
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DELETE FROM RefreshTokens
+    WHERE ExpiresAt < SYSUTCDATETIME();
+END;
+GO

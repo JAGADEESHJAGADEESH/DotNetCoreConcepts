@@ -1,4 +1,5 @@
 ﻿using AuthService.Core.Constants;
+using AuthService.Core.DTO;
 using AuthService.Core.Models;
 using BuildingBlocks.ExceptionsHelper;
 using DatabaseAccess.DapperRepository;
@@ -17,42 +18,38 @@ namespace AuthService.Infrastructure.Repositories.UserRepository
             _dapperRepository = dapperRepository;
         }
 
-        public async Task<User?> GetUserByEmailAsync(string email)
+        public async Task<AuthInfo?> GetUserAuthInfoAsync(string email)
         {
             try
             {
-                return await _dapperRepository.QueryFirstOrDefaultAsync<User>(StoredProcedureNames.USP_GetUserByEmail,
+                return await _dapperRepository.QueryFirstOrDefaultAsync<AuthInfo>(StoredProcedureNames.USP_GetUserAuthInfo,
                     new { Email = email }, commandType: CommandType.StoredProcedure
                 );
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while fetching user with email: {Email}", email);
-                // Add context and rethrow
-                throw new DataAccessException(
-                    $"Failed to fetch user with email: {email}", ex);
+                throw new DataAccessException($"Failed to fetch user with email: {email}", ex);
             }
         }
 
 
-        public async Task<bool> IsUserEmailExistsInDBAsync(string email)
+        public async Task<Roles?> GetRoleByRoleIdAsync(int id)
         {
             try
             {
-                var isValid = await _dapperRepository.QueryFirstOrDefaultAsync<bool>(StoredProcedureNames.USP_GetUserByEmail,
-                    new { Email = email }, commandType: CommandType.StoredProcedure
+                return await _dapperRepository.QueryFirstOrDefaultAsync<Roles>(StoredProcedureNames.USP_GetRoleByRoleId,
+                    new { RoleId = id }, commandType: CommandType.StoredProcedure
                 );
-
-                return isValid;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while validating user: {Email}", email);
-                throw new DataAccessException($"Failed to validate user with email: {email}", ex);
+                _logger.LogError(ex, "Error occurred while fetching user role: {Id}", id);
+                throw new DataAccessException($"Failed to fetch user role with id: {id}", ex);
             }
         }
 
-        public async Task<bool> RegisterUserAsync(User user)
+        public async Task<Guid> RegisterUserAsync(User user)
         {
             try
             {
@@ -61,13 +58,17 @@ namespace AuthService.Infrastructure.Repositories.UserRepository
                     user.FirstName,
                     user.LastName,
                     user.Email,
-                    user.Username,
+                    Username = $"{user.FirstName} {user.LastName}",
                     user.PasswordHash,
-                    user.PasswordSalt
+                    user.PasswordSalt,
+                    RoleId = user.Role.Id,
+                    user.IsActive,
+                    user.CreatedAt
                 };
-                var userId = await _dapperRepository.ExecuteAsync(StoredProcedureNames.USP_RegisterUser,
+
+                var userId = await _dapperRepository.QueryFirstOrDefaultAsync<Guid>(StoredProcedureNames.USP_RegisterUser,
                     parameters, commandType: CommandType.StoredProcedure);
-                return userId > 0;
+                return userId;
             }
             catch (Exception ex)
             {

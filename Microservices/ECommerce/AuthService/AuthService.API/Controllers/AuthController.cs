@@ -17,20 +17,20 @@ namespace AuthService.API.Controllers
         }
 
         [HttpPost("Register")]
-        public async Task<IActionResult> Register(RegisterUserDto dto)
+        public async Task<IActionResult> Register(UserRegistration dto)
         {
             var result = await _userService.RegisterUserAsync(dto);
 
             if (!result.Success)
                 return BadRequest(result.Error);
 
-            return Ok("User registered successfully");
+            return Ok(result.Value);
         }
 
         [HttpPost("Login")]
-        public async Task<IActionResult> Login(LoginDto dto)
+        public async Task<IActionResult> Login(LoginCredentials credentials)
         {
-            var result = await _userService.ValidateUserAsync(dto);
+            var result = await _userService.ValidateUserAsync(credentials);
 
             if (!result.Success)
                 return Unauthorized(result.Error);

@@ -6,6 +6,7 @@ using ProductService.Application.Services.CategoryService;
 using ProductService.Application.Services.ProductCatelogService;
 using ProductService.Infrastructure.Repositories.CategoryRepository;
 using ProductService.Infrastructure.Repositories.ProductRepository;
+using System.Security.Claims;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,22 +24,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateIssuer = true,
             ValidateAudience = true,
             ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = "AuthService", // must match your AuthService
-            ValidAudience = "Microservices",
+            ValidIssuer = "AuthService",
+            ValidAudience = "ProductService",
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes("THIS_IS_A_VERY_SECURE_SECRET_KEY_12345")) // same as AuthService secret
+                Encoding.UTF8.GetBytes("THIS_IS_A_VERY_SECURE_SECRET_KEY_12345")),
+
+            RoleClaimType = ClaimTypes.Role
         };
     });
 
-//// Authorization
-//builder.Services.AddAuthorization(options =>
-//{
-//    // Optional: require login for all endpoints by default
-//    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
-//        .RequireAuthenticatedUser()
-//        .Build();
-//});
 
 
 builder.Services.AddEndpointsApiExplorer();

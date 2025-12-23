@@ -4,7 +4,10 @@ CREATE OR ALTER PROCEDURE dbo.USP_RegisterUser
     @Email NVARCHAR(256),
     @Username NVARCHAR(100),
     @PasswordHash VARBINARY(MAX),
-    @PasswordSalt VARBINARY(MAX)
+    @PasswordSalt VARBINARY(MAX),
+    @RoleId INT,
+    @IsActive BIT = 1,
+    @CreatedAt DATETIME2 
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -20,6 +23,7 @@ BEGIN
         Username,
         PasswordHash,
         PasswordSalt,
+        RoleId,
         IsActive,
         CreatedAt
     )
@@ -32,11 +36,12 @@ BEGIN
         @Username,
         @PasswordHash,
         @PasswordSalt,
-        1,
-        SYSUTCDATETIME()
+        @RoleId,
+        @IsActive,  
+        @CreatedAt
     );
 
     -- Return success indicator
-    SELECT 1;
+    SELECT @UserId as UserId;
 END;
 GO

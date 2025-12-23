@@ -1,7 +1,11 @@
-﻿namespace AuthService.Application.Services.TokenService
+﻿using AuthService.Core.DTO;
+using AuthService.Core.Models;
+
+namespace AuthService.Application.Services.TokenService
 {
     public interface ITokenService
     {
-        string GenerateToken(Guid userId, string email);
+        Task<TokenResponse> GenerateTokenAsync(TokenPayload tokenPayLoad);
     }
+
 }

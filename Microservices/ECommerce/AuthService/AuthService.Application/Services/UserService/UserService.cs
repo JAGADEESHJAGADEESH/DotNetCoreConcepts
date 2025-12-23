@@ -20,50 +20,106 @@ namespace AuthService.Application.Services.UserService
             _tokenService = tokenService;
         }
 
-        public async Task<Result> RegisterUserAsync(RegisterUserDto userDto)
+        public async Task<Result<UserResponse>> RegisterUserAsync(UserRegistration registration)
         {
-            var existingUser = await _userRepository.GetUserByEmailAsync(userDto.Email);
-            if (existingUser != null)
-                return Result.Fail("User already exists");
+            var existingAuthInfo = await _userRepository.GetUserAuthInfoAsync(registration.Email);
+            if (existingAuthInfo != null)
+                return Result<UserResponse>.Fail("User already exists");
 
-            var (hash, salt) = await _passwordService.CreatePasswordHashAsync(userDto.Password);
+            var user = await MapUserEntity(registration);
 
-            var user = new User
+            var userId = await _userRepository.RegisterUserAsync(user);
+            if (userId != Guid.Empty)
+                user.Id = userId;
+
+            var newAuthInfo = new AuthInfo
             {
-                Id = Guid.NewGuid(),
-                FirstName = userDto.FirstName,
-                LastName = userDto.LastName,
-                Email = userDto.Email,
-                Username = userDto.Username,
-                PasswordHash = hash,
-                PasswordSalt = salt
+                Id = user.Id,
+                Email = user.Email,
+                RoleName = user.Role.RoleName
             };
 
-            await _userRepository.RegisterUserAsync(user);
-            return Result.Ok();
+            var tokenResponse = await GenerateTokenForUserAsync(newAuthInfo);
+
+            var userResponse = await MapUserResponse(user, tokenResponse);
+
+            return Result<UserResponse>.Ok(userResponse);
         }
 
 
-        public async Task<Result<string>> ValidateUserAsync(LoginDto dto)
+        public async Task<Result<TokenResponse>> ValidateUserAsync(LoginCredentials credentials)
         {
-            var user = await _userRepository.GetUserByEmailAsync(dto.EmailAddress);
-            if (user == null)
-                return Result<string>.Fail("Invalid credentials");
+            var authInfo = await _userRepository.GetUserAuthInfoAsync(credentials.EmailAddress);
+
+            if (authInfo == null)
+                return Result<TokenResponse>.Fail("Invalid registration");
 
             var isValid = await _passwordService.VerifyPasswordAsync(
-                dto.Password,
-                user.PasswordHash,
-                user.PasswordSalt);
+                credentials.Password,
+                authInfo.PasswordHash,
+                authInfo.PasswordSalt);
 
             if (!isValid)
-                return Result<string>.Fail("Invalid credentials");
+                return Result<TokenResponse>.Fail("Invalid registration");
 
-            var token = _tokenService.GenerateToken(user.Id, user.Email);
+            var tokenResponse = await GenerateTokenForUserAsync(authInfo);
 
-            return Result<string>.Ok(token);
+            return Result<TokenResponse>.Ok(tokenResponse);
         }
 
+        private async Task<Roles> GetUserRoleAsync(int id)
+        {
+            return await _userRepository.GetRoleByRoleIdAsync(id) ?? new Roles { Id = id, RoleName = "User" };
+        }
 
+        private async Task<UserResponse> MapUserResponse(User user, TokenResponse tokenResponse)
+        {
+            var role = await GetUserRoleAsync(user.Role.Id);
+            return new UserResponse
+            {
+                Id = user.Id,
+                UserName = $"{user.FirstName} {user.LastName}",
+                EmailAddress = user.Email,
+                RoleName = role.RoleName,
+                CreatedAt = user.CreatedAt,
+                IsActive = user.IsActive,
+                TokenResponse = tokenResponse
+            };
+        }
+
+        private async Task<User> MapUserEntity(UserRegistration registration)
+        {
+            var (hash, salt) = await _passwordService.CreatePasswordHashAsync(registration.Password);
+            var role = await GetUserRoleAsync(registration.RoleId);
+            return new User
+            {
+                Id = Guid.NewGuid(),
+                FirstName = registration.FirstName,
+                LastName = registration.LastName,
+                Email = registration.Email,
+                PasswordHash = hash,
+                PasswordSalt = salt,
+                Role = role,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+        }
+
+        private TokenPayload MapTokenPayload(AuthInfo authInfo)
+        {
+            return new TokenPayload
+            {
+                Id = authInfo.Id,
+                EmailAddress = authInfo.Email,
+                RoleName = authInfo.RoleName
+            };
+        }
+
+        private async Task<TokenResponse> GenerateTokenForUserAsync(AuthInfo authInfo)
+        {
+            var tokenPayload = MapTokenPayload(authInfo);
+            return await _tokenService.GenerateTokenAsync(tokenPayload);
+        }
     }
 
 }
