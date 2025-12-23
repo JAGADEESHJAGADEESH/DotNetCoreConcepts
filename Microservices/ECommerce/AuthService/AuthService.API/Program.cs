@@ -1,4 +1,5 @@
 using AuthService.Application.Services.PasswordService;
+using AuthService.Application.Services.RefreshTokenService;
 using AuthService.Application.Services.TokenService;
 using AuthService.Application.Services.UserService;
 using AuthService.Core.Models;
@@ -59,10 +60,12 @@ new DapperRepository(connectionString));
 builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
-builder.Services.AddSingleton<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddSingleton<IRefreshTokenService, RefreshTokenService>();
+
 
 //Repositories
 builder.Services.AddSingleton<IUserRepository, UserRepository>();
+builder.Services.AddSingleton<IRefreshTokenRepository, RefreshTokenRepository>();
 
 var app = builder.Build();
 

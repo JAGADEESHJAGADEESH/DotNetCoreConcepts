@@ -1,6 +1,8 @@
-﻿using AuthService.Application.Services.UserService;
+﻿using AuthService.Application.Services.RefreshTokenService;
+using AuthService.Application.Services.UserService;
 using AuthService.Core.DTO;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace AuthService.API.Controllers
 {
@@ -10,10 +12,14 @@ namespace AuthService.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IRefreshTokenService _refreshTokenService;
 
-        public AuthController(IUserService userService)
+        public AuthController(
+            IUserService userService,
+            IRefreshTokenService refreshTokenService)
         {
             _userService = userService;
+            _refreshTokenService = refreshTokenService;
         }
 
         [HttpPost("Register")]
@@ -39,6 +45,31 @@ namespace AuthService.API.Controllers
             {
                 accessToken = result.Value
             });
+        }
+
+        [HttpPost("refresh-token")]
+        public async Task<IActionResult> RefreshToken(
+        [FromBody] RefreshTokenRequest request)
+        {
+            var principal = HttpContext.User;
+
+            if (principal?.Identity?.IsAuthenticated != true)
+                return Unauthorized();
+
+            var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (userId is null)
+                return Unauthorized();
+
+            var user = await _userService.GetByIdAsync(Guid.Parse(userId));
+
+            //if (user is null || !user.IsActive)
+            //    return Unauthorized();
+
+            var tokenResponse = await _refreshTokenService
+                .RefreshAsync(request.RefreshToken, null);
+
+            return Ok(tokenResponse);
         }
 
     }

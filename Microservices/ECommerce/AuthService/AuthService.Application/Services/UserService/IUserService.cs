@@ -8,6 +8,6 @@ namespace AuthService.Application.Services.UserService
     {
         Task<Result<UserResponse>> RegisterUserAsync(UserRegistration registration);
         Task<Result<TokenResponse>> ValidateUserAsync(LoginCredentials credentials);
-
+        Task<Result<UserResponse>> GetByIdAsync(Guid userId);
     }
 }

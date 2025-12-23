@@ -3,8 +3,10 @@
     public class TokenResponse
     {
         public string AccessToken { get; set; } = null!;
+        public DateTime AccessTokenExpiresAt { get; set; }
+
         public string RefreshToken { get; set; } = null!;
-        public DateTime AccessTokenExpiry { get; set; }
+        public DateTime RefreshTokenExpiresAt { get; set; }
     }
 
 }
