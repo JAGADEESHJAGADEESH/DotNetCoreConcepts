@@ -5,7 +5,6 @@ using ProductService.Core.DTO;
 
 namespace ProductService.API.Controllers
 {
-    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ProductController : ControllerBase
@@ -39,6 +38,7 @@ namespace ProductService.API.Controllers
             return Ok(result.Value);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost("CreateProduct")]
         public async Task<IActionResult> CreateProductAsync([FromBody]ProductRequestDto product)
         {

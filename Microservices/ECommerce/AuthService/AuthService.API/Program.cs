@@ -2,10 +2,12 @@ using AuthService.Application.Services.PasswordService;
 using AuthService.Application.Services.TokenService;
 using AuthService.Application.Services.UserService;
 using AuthService.Core.Models;
+using AuthService.Infrastructure.Repositories.RefreshTokenRepository;
 using AuthService.Infrastructure.Repositories.UserRepository;
 using BuildingBlocks.ExceptionsHelper;
 using DatabaseAccess.DapperRepository;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Text;
 
 
@@ -36,7 +38,8 @@ builder.Services.AddAuthentication("Bearer")
             ValidIssuer = jwt!.Issuer,
             ValidAudience = jwt.Audience,
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(jwt.Key))
+                Encoding.UTF8.GetBytes(jwt.Key)),
+            RoleClaimType = ClaimTypes.Role
         };
     });
 
@@ -56,6 +59,7 @@ new DapperRepository(connectionString));
 builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IPasswordService, PasswordService>();
 builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddSingleton<IRefreshTokenRepository, RefreshTokenRepository>();
 
 //Repositories
 builder.Services.AddSingleton<IUserRepository, UserRepository>();

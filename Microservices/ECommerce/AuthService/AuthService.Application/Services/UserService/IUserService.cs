@@ -1,12 +1,13 @@
 ﻿using AuthService.Core.DTO;
+using AuthService.Core.Models;
 using BuildingBlocks.Common;
 
 namespace AuthService.Application.Services.UserService
 {
     public interface IUserService
     {
-        Task<Result> RegisterUserAsync(RegisterUserDto userDto);
-        Task<Result<string>> ValidateUserAsync(LoginDto loginDto);
+        Task<Result<UserResponse>> RegisterUserAsync(UserRegistration registration);
+        Task<Result<TokenResponse>> ValidateUserAsync(LoginCredentials credentials);
 
     }
 }

@@ -5,8 +5,8 @@ namespace AuthService.Infrastructure.Repositories.UserRepository
 {
     public interface IUserRepository
     {
-        Task<bool> RegisterUserAsync(User user);
-        Task<bool> IsUserEmailExistsInDBAsync(string email);
-        Task<User?> GetUserByEmailAsync(string email);
+        Task<Guid> RegisterUserAsync(User user);
+        Task<Roles?> GetRoleByRoleIdAsync(int id);
+        Task<AuthInfo?> GetUserAuthInfoAsync(string email);
     }
 }
