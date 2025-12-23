@@ -13,7 +13,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\DBContextHelpers\DBContextHelpers\DBContextHelpers.csproj" />
     <ProjectReference Include="..\..\..\..\NugetPackages\DatabaseAccess\DatabaseAccess.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\BuildingBlocks\BuildingBlocks.csproj" />
     <ProjectReference Include="..\AuthService.Core\AuthService.Core.csproj" />

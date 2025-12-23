@@ -35,8 +35,12 @@ namespace AuthService.API.Controllers
             if (!result.Success)
                 return Unauthorized(result.Error);
 
-            return Ok("Login successful");
+            return Ok(new
+            {
+                accessToken = result.Value
+            });
         }
+
     }
 
 

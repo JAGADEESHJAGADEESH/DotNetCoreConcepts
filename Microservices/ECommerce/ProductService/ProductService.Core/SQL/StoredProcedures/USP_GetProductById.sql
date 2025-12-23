@@ -15,6 +15,8 @@ CREATE OR ALTER PROCEDURE USP_GetProductById
             p.ModifiedDate,
             p.CategoryId,
             c.CategoryName,
+            Pi.Id AS ImageId,
+            pi.ProductId,
             pi.ImageUrl,
             pi.CreatedDate AS ImageCreatedDate,
             pi.ModifiedDate AS ImageModifiedDate,

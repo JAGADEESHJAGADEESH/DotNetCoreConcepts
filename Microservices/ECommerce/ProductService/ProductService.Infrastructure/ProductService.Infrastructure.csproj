@@ -12,7 +12,6 @@
     <PackageReference Include="Microsoft.IdentityModel.Logging" Version="7.7.1" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\DBContextHelpers\DBContextHelpers\DBContextHelpers.csproj" />
     <ProjectReference Include="..\..\..\..\NugetPackages\DatabaseAccess\DatabaseAccess.csproj" />
     <ProjectReference Include="..\..\..\BuildingBlocks\BuildingBlocks\BuildingBlocks.csproj" />
     <ProjectReference Include="..\ProductService.Core\ProductService.Core.csproj" />

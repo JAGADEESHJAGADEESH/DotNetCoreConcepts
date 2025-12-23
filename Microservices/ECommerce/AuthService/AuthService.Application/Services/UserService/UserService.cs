@@ -1,4 +1,5 @@
 ﻿using AuthService.Application.Services.PasswordService;
+using AuthService.Application.Services.TokenService;
 using AuthService.Core.DTO;
 using AuthService.Core.Models;
 using AuthService.Infrastructure.Repositories.UserRepository;
@@ -10,11 +11,13 @@ namespace AuthService.Application.Services.UserService
     {
         private readonly IUserRepository _userRepository;
         private readonly IPasswordService _passwordService;
+        private readonly ITokenService _tokenService;
 
-        public UserService(IUserRepository userRepository, IPasswordService passwordService)
+        public UserService(IUserRepository userRepository, IPasswordService passwordService, ITokenService tokenService)
         {
             _userRepository = userRepository;
             _passwordService = passwordService;
+            _tokenService = tokenService;
         }
 
         public async Task<Result> RegisterUserAsync(RegisterUserDto userDto)
@@ -41,21 +44,26 @@ namespace AuthService.Application.Services.UserService
         }
 
 
-        public async Task<Result> ValidateUserAsync(LoginDto loginDto)
+        public async Task<Result<string>> ValidateUserAsync(LoginDto dto)
         {
-            var user = await _userRepository.GetUserByEmailAsync(loginDto.EmailAddress);
+            var user = await _userRepository.GetUserByEmailAsync(dto.EmailAddress);
             if (user == null)
-                return Result.Fail("Invalid credentials");
+                return Result<string>.Fail("Invalid credentials");
 
             var isValid = await _passwordService.VerifyPasswordAsync(
-                loginDto.Password,
+                dto.Password,
                 user.PasswordHash,
                 user.PasswordSalt);
 
-            return isValid
-                ? Result.Ok()
-                : Result.Fail("Invalid credentials");
+            if (!isValid)
+                return Result<string>.Fail("Invalid credentials");
+
+            var token = _tokenService.GenerateToken(user.Id, user.Email);
+
+            return Result<string>.Ok(token);
         }
+
+
     }
 
 }

@@ -6,7 +6,7 @@ namespace AuthService.Application.Services.UserService
     public interface IUserService
     {
         Task<Result> RegisterUserAsync(RegisterUserDto userDto);
-        Task<Result> ValidateUserAsync(LoginDto loginDto);
+        Task<Result<string>> ValidateUserAsync(LoginDto loginDto);
 
     }
 }
