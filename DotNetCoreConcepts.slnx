@@ -8,7 +8,7 @@
   </Folder>
   <Folder Name="/Microservices/ECommerce/" />
   <Folder Name="/Microservices/ECommerce/AuthService/">
-    <Project Path="Microservices/ECommerce/AuthService/AuthService.API/AuthService.API.csproj" />
+    <Project Path="Microservices/ECommerce/AuthService/AuthService.API/AuthService.API.csproj" Id="89192e54-f234-4ce9-b4dd-6c583d44be06" />
     <Project Path="Microservices/ECommerce/AuthService/AuthService.Application/AuthService.Application.csproj" Id="419a1913-1d17-4a97-8185-2822f8b388c4" />
     <Project Path="Microservices/ECommerce/AuthService/AuthService.Core/AuthService.Core.csproj" Id="4cf5d8c9-a500-4f38-bd8c-170232a31cd9" />
     <Project Path="Microservices/ECommerce/AuthService/AuthService.Infrastructure/AuthService.Infrastructure.csproj" Id="ce16a800-bb34-4a3f-8c50-cb5228a8eb42" />

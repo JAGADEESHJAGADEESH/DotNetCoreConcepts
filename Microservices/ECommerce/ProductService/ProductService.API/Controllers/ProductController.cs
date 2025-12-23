@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using ProductService.Application.Services.ProductCatelogService;
 using ProductService.Core.DTO;
 
 namespace ProductService.API.Controllers
 {
+    [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class ProductController : ControllerBase
@@ -38,7 +40,7 @@ namespace ProductService.API.Controllers
         }
 
         [HttpPost("CreateProduct")]
-        public async Task<IActionResult> CreateProductAsync(ProductRequestDto product)
+        public async Task<IActionResult> CreateProductAsync([FromBody]ProductRequestDto product)
         {
             var result = await _productService.CreateProductAsync(product);
 

@@ -1,15 +1,45 @@
+using BuildingBlocks.ExceptionsHelper;
 using DatabaseAccess.DapperRepository;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 using ProductService.Application.Services.CategoryService;
 using ProductService.Application.Services.ProductCatelogService;
 using ProductService.Infrastructure.Repositories.CategoryRepository;
 using ProductService.Infrastructure.Repositories.ProductRepository;
-using BuildingBlocks.ExceptionsHelper;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+// JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = "AuthService", // must match your AuthService
+            ValidAudience = "Microservices",
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes("THIS_IS_A_VERY_SECURE_SECRET_KEY_12345")) // same as AuthService secret
+        };
+    });
+
+//// Authorization
+//builder.Services.AddAuthorization(options =>
+//{
+//    // Optional: require login for all endpoints by default
+//    options.FallbackPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+//        .RequireAuthenticatedUser()
+//        .Build();
+//});
+
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -55,6 +85,8 @@ app.UseExceptionHandler(builder =>
 app.UseGlobalExceptionMiddleware();
 
 app.UseHttpsRedirection();
+
+app.UseAuthentication();
 
 app.UseAuthorization();
 

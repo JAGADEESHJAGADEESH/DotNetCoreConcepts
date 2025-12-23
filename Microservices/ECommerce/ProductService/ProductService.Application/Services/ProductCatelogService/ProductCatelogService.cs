@@ -1,5 +1,4 @@
 ﻿using BuildingBlocks.Common;
-using Microsoft.Extensions.Logging;
 using ProductService.Application.Services.CategoryService;
 using ProductService.Core.DTO;
 using ProductService.Core.Models;
@@ -64,6 +63,8 @@ namespace ProductService.Application.Services.ProductCatelogService
                 ModifiedDate = productResponse.ModifiedDate,
                 Image = new ProductImage
                 {
+                    Id = productResponse.ImageId,
+                    ProductId = productResponse.ProductId,
                     ImageUrl = productResponse.ImageUrl,
                     CreatedDate = productResponse.ImageCreatedDate,
                     ModifiedDate = productResponse.ImageModifiedDate,
