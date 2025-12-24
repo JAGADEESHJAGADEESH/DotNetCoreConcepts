@@ -22,7 +22,7 @@ namespace ProductService.Application.Services.ProductCatelogService
             var productId = await _productRepository.CreateProductAsync(product);
 
             if (productId == Guid.Empty)
-                return Result<Guid>.Fail("Product creation failed");
+                return Result<Guid>.Fail(new ErrorResponse{ Message = "Product creation failed"});
 
             return Result<Guid>.Ok(productId);
         }
@@ -32,7 +32,7 @@ namespace ProductService.Application.Services.ProductCatelogService
             var productResponses = await _productRepository.GetAllProductsAsync();
 
             if (productResponses == null || !productResponses.Any())
-                return Result<IEnumerable<Product>>.Fail("No products found");
+                return Result<IEnumerable<Product>>.Fail(new ErrorResponse{ Message = "No products found"});
 
             var products = await Task.WhenAll(productResponses.Select(MapToProduct));
             return Result<IEnumerable<Product>>.Ok(products);
@@ -43,7 +43,7 @@ namespace ProductService.Application.Services.ProductCatelogService
             var productResponse = await _productRepository.GetProductByIdAsync(id);
 
             if (productResponse == null)
-                return Result<Product>.Fail("Product not found");
+                return Result<Product>.Fail(new ErrorResponse{ Message = "Product not found"});
 
             var product = await MapToProduct(productResponse);
             return Result<Product>.Ok(product);

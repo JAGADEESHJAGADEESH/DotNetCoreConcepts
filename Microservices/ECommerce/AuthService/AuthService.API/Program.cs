@@ -18,6 +18,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+// Configure CORS for React app
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:5173") // <-- change to your React app origin
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("JwtSettings"));
 
@@ -93,6 +105,10 @@ app.UseExceptionHandler(builder =>
 });
 
 app.UseGlobalExceptionMiddleware();
+
+
+// Enable CORS (must be before authentication/authorization)
+app.UseCors("AllowReactApp");
 
 app.UseHttpsRedirection();
 
