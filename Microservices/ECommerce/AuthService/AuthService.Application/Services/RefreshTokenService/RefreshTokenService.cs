@@ -2,7 +2,6 @@
 using AuthService.Core.DTO;
 using AuthService.Core.Models;
 using AuthService.Infrastructure.Repositories.RefreshTokenRepository;
-using Microsoft.Extensions.Options;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -49,7 +48,7 @@ namespace AuthService.Application.Services.RefreshTokenService
             await _refreshTokenRepository.CreateAsync(refreshTokenEntity);
 
             return await _tokenService.GenerateTokenAsync(tokenPayload);
-            
+
         }
 
         private static string GenerateRefreshToken()

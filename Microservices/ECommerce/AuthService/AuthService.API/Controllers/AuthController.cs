@@ -56,18 +56,20 @@ namespace AuthService.API.Controllers
             if (principal?.Identity?.IsAuthenticated != true)
                 return Unauthorized();
 
-            var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+            var email = principal.FindFirstValue(ClaimTypes.Email);
 
-            if (userId is null)
+            if (email is null)
                 return Unauthorized();
 
-            var user = await _userService.GetByIdAsync(Guid.Parse(userId));
+            var authInfo = await _userService.GetUserAuthInfoAsync(email);
 
-            //if (user is null || !user.IsActive)
-            //    return Unauthorized();
+            if (authInfo is null)
+                return Unauthorized();
+
+            var tokenPayload = _userService.MapTokenPayload(authInfo);
 
             var tokenResponse = await _refreshTokenService
-                .RefreshAsync(request.RefreshToken, null);
+                .RefreshAsync(request.RefreshToken, tokenPayload);
 
             return Ok(tokenResponse);
         }
