@@ -1,5 +1,6 @@
 ﻿using AuthService.Core.Constants;
 using AuthService.Core.Models;
+using BuildingBlocks.ExceptionsHelper;
 using DatabaseAccess.DapperRepository;
 using Microsoft.Extensions.Logging;
 using System.Data;
@@ -41,7 +42,8 @@ namespace AuthService.Infrastructure.Repositories.RefreshTokenRepository
                     "Failed to create refresh token for UserId: {UserId}",
                     token.UserId);
 
-                throw;
+                throw new DataAccessException(
+                    "Error creating refresh token", ex);
             }
         }
 
@@ -60,7 +62,8 @@ namespace AuthService.Infrastructure.Repositories.RefreshTokenRepository
                 _logger.LogError(ex,
                     "Failed to retrieve refresh token by hash");
 
-                throw;
+                throw new DataAccessException(
+                    "Error retrieving refresh token", ex);
             }
         }
 
@@ -70,18 +73,19 @@ namespace AuthService.Infrastructure.Repositories.RefreshTokenRepository
             {
                 await _dapperRepository.ExecuteAsync(
                     StoredProcedureNames.USP_RevokeRefreshToken,
-                    new { RefreshTokenId = tokenId },
+                    new { TokenId = tokenId },   
                     commandType: CommandType.StoredProcedure
                 );
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex,
-                    "Failed to revoke refresh token. TokenId: {TokenId}",
-                    tokenId);
+                    "Failed to revoke refresh token with id {TokenId}", tokenId);
 
-                throw;
+                throw new DataAccessException(
+                    "Error revoking refresh token", ex);
             }
         }
+
     }
 }

@@ -22,7 +22,7 @@ namespace AuthService.Application.Services.UserService
 
         public async Task<Result<UserResponse>> RegisterUserAsync(UserRegistration registration)
         {
-            var existingAuthInfo = await _userRepository.GetUserAuthInfoAsync(registration.Email);
+            var existingAuthInfo = await GetUserAuthInfoAsync(registration.Email);
             if (existingAuthInfo != null)
                 return Result<UserResponse>.Fail("User already exists");
 
@@ -49,7 +49,7 @@ namespace AuthService.Application.Services.UserService
 
         public async Task<Result<TokenResponse>> ValidateUserAsync(LoginCredentials credentials)
         {
-            var authInfo = await _userRepository.GetUserAuthInfoAsync(credentials.EmailAddress);
+            var authInfo = await GetUserAuthInfoAsync(credentials.EmailAddress);
 
             if (authInfo == null)
                 return Result<TokenResponse>.Fail("Invalid registration");
@@ -105,7 +105,7 @@ namespace AuthService.Application.Services.UserService
             };
         }
 
-        private TokenPayload MapTokenPayload(AuthInfo authInfo)
+        public TokenPayload MapTokenPayload(AuthInfo authInfo)
         {
             return new TokenPayload
             {
@@ -115,11 +115,16 @@ namespace AuthService.Application.Services.UserService
             };
         }
 
-        private async Task<TokenResponse> GenerateTokenForUserAsync(AuthInfo authInfo)
+        public async Task<TokenResponse> GenerateTokenForUserAsync(AuthInfo authInfo)
         {
             var tokenPayload = MapTokenPayload(authInfo);
             return await _tokenService.GenerateTokenAsync(tokenPayload);
         }
+
+       public async Task<AuthInfo?> GetUserAuthInfoAsync(string email)
+       {
+          return await _userRepository.GetUserAuthInfoAsync(email);
+       }
     }
 
 }

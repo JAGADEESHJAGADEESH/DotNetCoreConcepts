@@ -23,25 +23,27 @@ namespace AuthService.Application.Services.TokenService
             _refreshTokenRepo = refreshTokenRepo;
         }
 
-        public async Task<TokenResponse> GenerateTokenAsync(TokenPayload tokenPayLoad)
+        public async Task<TokenResponse> GenerateTokenAsync(TokenPayload payload)
         {
             // ===== Claims =====
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, tokenPayLoad.Id.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, tokenPayLoad.EmailAddress),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.Role, tokenPayLoad.RoleName)
+                new Claim(ClaimTypes.NameIdentifier, payload.Id.ToString()), // ✅ REQUIRED
+                new Claim(JwtRegisteredClaimNames.Sub, payload.Id.ToString()),
+                new Claim(JwtRegisteredClaimNames.Email, payload.EmailAddress),
+                new Claim(ClaimTypes.Role, payload.RoleName),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
             // ===== Signing =====
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_settings.Key));
 
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var credentials = new SigningCredentials(
+                key, SecurityAlgorithms.HmacSha256);
 
             // ===== Expiry =====
-            var accessTokenExpiry = DateTime.UtcNow
+            var accessTokenExpiresAt = DateTime.UtcNow
                 .AddMinutes(_settings.ExpiryMinutes);
 
             // ===== Access Token =====
@@ -50,8 +52,8 @@ namespace AuthService.Application.Services.TokenService
                 audience: _settings.Audience,
                 claims: claims,
                 notBefore: DateTime.UtcNow,
-                expires: accessTokenExpiry,
-                signingCredentials: creds
+                expires: accessTokenExpiresAt,
+                signingCredentials: credentials
             );
 
             var accessToken = new JwtSecurityTokenHandler()
@@ -61,36 +63,37 @@ namespace AuthService.Application.Services.TokenService
             var refreshToken = GenerateRefreshToken();
             var refreshTokenHash = HashToken(refreshToken);
 
+            var refreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+
             await _refreshTokenRepo.CreateAsync(new RefreshToken
             {
                 Id = Guid.NewGuid(),
-                UserId = tokenPayLoad.Id,
+                UserId = payload.Id,
                 TokenHash = refreshTokenHash,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
+                ExpiresAt = refreshTokenExpiry,
                 IsRevoked = false
             });
 
             return new TokenResponse
             {
                 AccessToken = accessToken,
+                AccessTokenExpiresAt = accessTokenExpiresAt,
                 RefreshToken = refreshToken,
-                AccessTokenExpiry = accessTokenExpiry
+                RefreshTokenExpiresAt = refreshTokenExpiry
             };
         }
 
         private static string GenerateRefreshToken()
         {
-            var bytes = new byte[64];
-            using var rng = RandomNumberGenerator.Create();
-            rng.GetBytes(bytes);
-            return Convert.ToBase64String(bytes);
+            return Convert.ToBase64String(
+                RandomNumberGenerator.GetBytes(64));
         }
 
         private static string HashToken(string token)
         {
             using var sha256 = SHA256.Create();
-            var bytes = Encoding.UTF8.GetBytes(token);
-            return Convert.ToBase64String(sha256.ComputeHash(bytes));
+            return Convert.ToBase64String(
+                sha256.ComputeHash(Encoding.UTF8.GetBytes(token)));
         }
     }
 }
