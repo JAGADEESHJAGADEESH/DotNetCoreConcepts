@@ -55,13 +55,10 @@ namespace AuthService.Infrastructure.Repositories.UserRepository
             {
                 var parameters = new
                 {
-                    user.FirstName,
-                    user.LastName,
                     user.Email,
-                    Username = $"{user.FirstName} {user.LastName}",
+                    user.UserName,
                     user.PasswordHash,
                     user.PasswordSalt,
-                    RoleId = user.Role.Id,
                     user.IsActive,
                     user.CreatedAt
                 };

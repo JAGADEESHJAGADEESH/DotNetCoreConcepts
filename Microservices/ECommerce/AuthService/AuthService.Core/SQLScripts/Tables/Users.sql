@@ -3,8 +3,6 @@ BEGIN
     CREATE TABLE dbo.Users
     (
         Id UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
-        FirstName NVARCHAR(100) NOT NULL,
-        LastName NVARCHAR(100) NOT NULL,
         Email NVARCHAR(256) NOT NULL UNIQUE,
         Username NVARCHAR(100) NOT NULL UNIQUE,
         PasswordHash VARBINARY(MAX) NOT NULL,

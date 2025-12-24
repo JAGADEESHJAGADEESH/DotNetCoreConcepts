@@ -24,7 +24,7 @@ namespace AuthService.Application.Services.UserService
         {
             var existingAuthInfo = await GetUserAuthInfoAsync(registration.Email);
             if (existingAuthInfo != null)
-                return Result<UserResponse>.Fail("User already exists");
+                return Result<UserResponse>.Fail(new ErrorResponse{ Message = "User already exists"});
 
             var user = await MapUserEntity(registration);
 
@@ -36,7 +36,7 @@ namespace AuthService.Application.Services.UserService
             {
                 Id = user.Id,
                 Email = user.Email,
-                RoleName = user.Role.RoleName
+                RoleName = "User"
             };
 
             var tokenResponse = await GenerateTokenForUserAsync(newAuthInfo);
@@ -49,10 +49,11 @@ namespace AuthService.Application.Services.UserService
 
         public async Task<Result<TokenResponse>> ValidateUserAsync(LoginCredentials credentials)
         {
+            var errorResponse = new ErrorResponse { Message = "Invalid credentials. Please try again." };
             var authInfo = await GetUserAuthInfoAsync(credentials.EmailAddress);
 
             if (authInfo == null)
-                return Result<TokenResponse>.Fail("Invalid registration");
+                return Result<TokenResponse>.Fail(errorResponse);
 
             var isValid = await _passwordService.VerifyPasswordAsync(
                 credentials.Password,
@@ -60,7 +61,7 @@ namespace AuthService.Application.Services.UserService
                 authInfo.PasswordSalt);
 
             if (!isValid)
-                return Result<TokenResponse>.Fail("Invalid registration");
+                return Result<TokenResponse>.Fail(errorResponse);
 
             var tokenResponse = await GenerateTokenForUserAsync(authInfo);
 
@@ -78,7 +79,7 @@ namespace AuthService.Application.Services.UserService
             return new UserResponse
             {
                 Id = user.Id,
-                UserName = $"{user.FirstName} {user.LastName}",
+                UserName = user.UserName,
                 EmailAddress = user.Email,
                 RoleName = role.RoleName,
                 CreatedAt = user.CreatedAt,
@@ -90,17 +91,15 @@ namespace AuthService.Application.Services.UserService
         private async Task<User> MapUserEntity(UserRegistration registration)
         {
             var (hash, salt) = await _passwordService.CreatePasswordHashAsync(registration.Password);
-            var role = await GetUserRoleAsync(registration.RoleId);
             return new User
             {
                 Id = Guid.NewGuid(),
-                FirstName = registration.FirstName,
-                LastName = registration.LastName,
                 Email = registration.Email,
+                UserName = registration.UserName,
                 PasswordHash = hash,
                 PasswordSalt = salt,
-                Role = role,
                 IsActive = true,
+                Role = await GetUserRoleAsync(registration.RoleId),
                 CreatedAt = DateTime.UtcNow
             };
         }
